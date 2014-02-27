@@ -24,6 +24,8 @@ void Print_Board(int **);
 bool Solution_Found(int **);
 void Breadth_First_Search(int **, int **, int **);
 Node* Create_Node(int **);
+void Find_Blank(int **);
+int** Swap_Tile(int **, int , int , int , int );
 
 using namespace std;
 
@@ -85,6 +87,17 @@ void Print_Board(int **board){
     cout << endl;
 }//end Print_Board()
 
+void Find_Blank(int &row, int &column, int **board){
+    for(int i=0; i < ROW_SIZE; i++){
+        for(int j = 0; j < COLUMN_SIZE; j++){
+            if(board[i][j] == 0){
+                column = j;
+                row = i;
+            }
+        }
+    }
+}
+
 
 //A* sort function
 
@@ -111,7 +124,56 @@ Node* Create_Node(int **passed_board){
     Node *temp;
     temp = new Node;
     temp->board = passed_board;//set node's
+    temp->next = NULL;
     return temp;
+}
+
+int** Swap_Tile(int **board, int row, int column, int dx, int dy){
+    int** temp_board;
+    int temp;
+
+    temp_board = new int*[ROW_SIZE];
+
+    //copy board
+    for(int i=0;i<ROW_SIZE;i++){
+        temp_board[i] = new int[COLUMN_SIZE];
+        for(int j=0; j<COLUMN_SIZE;j++){
+            temp_board[i][j] = board[i][j];
+        }
+    }
+
+    //make switch
+    cout << "In Function: " << row << ", " << column << endl;
+    cout << dx << ", " << dy << endl;
+    temp = temp_board[row][column];
+    temp_board[row][column] = temp_board[row + dx][column + dy];
+    temp_board[row + dx][column + dy] = temp;
+
+    return temp_board;
+}
+
+bool In_Closed_List(Node *head, int **board){
+    bool equivalent = true;
+    Node *temp;
+    temp = head;
+    if(head == NULL)
+        return false;
+    if(temp != NULL){
+        while(temp->next != NULL){
+            for(int i=0; i<ROW_SIZE;i++){
+                for(int j=0;j<COLUMN_SIZE;j++){
+                    if(board[i][j] != temp->board[i][j])
+                        equivalent = false;
+                }
+            }
+            if(equivalent == true)
+                return equivalent;
+            temp = temp->next;
+        }
+    }
+
+    return equivalent;
+
 }
 
 //function that loops through the three boards looking for a solution.
@@ -119,11 +181,91 @@ Node* Create_Node(int **passed_board){
 //board will have a solution. Thus we cannot simply solve one and move
 //to the next.
 void Breadth_First_Search(int **board1, int **board2, int **board3){
-    Node *root, *middle, *tail;
-    root = Create_Node(board1);
-    middle = Create_Node(board2);
-    tail = Create_Node(board3);
-    root->next = middle;
-    middle->next = tail;
-    Print_Board(root->board);
-}
+    bool keepgoing = true, board1_solved = false, board2_solved = false, board3_solved = false;
+    int row;
+    int column, temp;
+    int **temp_board;
+    Node *tail1, *tail2, *tail3, *fringe1, *fringe2, *fringe3, *closed1, *closed2, *closed3, *null, *temp_node;
+    fringe1 = Create_Node(board1);
+    fringe2 = Create_Node(board2);
+    fringe3 = Create_Node(board3);
+
+    null = NULL;
+    closed1 = NULL;
+    closed2 = NULL;
+    closed3 = NULL;
+
+    tail1 = fringe1;
+    tail2 = fringe2;
+    tail3 = fringe3;
+
+    while(keepgoing){
+        //check for solutions:
+        if((board1_solved&&board2_solved) || (board2_solved&&board3_solved) || (board1_solved&&board3_solved))
+            keepgoing = false;
+        Find_Blank(row, column, fringe1->board);
+        if(!board1_solved && row - 1 >=0){
+            temp_board = Swap_Tile(fringe1->board, row, column, -1, 0);
+            if(In_Closed_List(closed1, temp_board) == false){
+                if(Solution_Found(temp_board)){
+                    board1_solved = true;
+                }else{
+
+                }
+
+                tail1->next = Create_Node(temp_board);
+                tail1 = tail1->next;
+            }//end if
+        }
+
+        if(!board1_solved && row + 1 <=2){
+            temp_board = Swap_Tile(fringe1->board, row, column, 1, 0);
+            if(In_Closed_List(closed1, temp_board) == false){
+                if(Solution_Found(temp_board)){
+                    board1_solved = true;
+                }else{
+
+                }
+                tail1->next = Create_Node(temp_board);
+                tail1 = tail1->next;
+            }//end if
+        }
+
+        if(!board1_solved && column - 1 >=0){
+            temp_board = Swap_Tile(fringe1->board, row, column, 0, -1);
+            if(In_Closed_List(closed1, temp_board) == false){
+                if(Solution_Found(temp_board)){
+                    board1_solved = true;
+                }else{
+
+                }
+                tail1->next = Create_Node(temp_board);
+                tail1 = tail1->next;
+            }//end if
+        }
+
+        if(!board1_solved && column + 1 <=2){
+            temp_board = Swap_Tile(fringe1->board, row, column, 0, 1);
+            if(In_Closed_List(closed1, temp_board) == false){
+                if(Solution_Found(temp_board)){
+                    board1_solved = true;
+                }else{
+
+                }
+                tail1->next = Create_Node(temp_board);
+                tail1 = tail1->next;
+            }//end if
+        }
+        if(!board1_solved){
+            temp_node = fringe1;
+            fringe1 = fringe1->next;
+            delete temp_node;
+        }
+
+        //cout << row << column << endl;
+        //Print_Board(Swap_Tile(fringe1->board, row, column, -1, 0));
+        //Print_Board(fringe1->board);
+        //keepgoing = false;
+
+    }//end while
+}//end breadth first search
